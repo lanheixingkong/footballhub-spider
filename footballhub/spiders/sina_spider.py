@@ -7,6 +7,7 @@ import sys
 from hashlib import md5
 from footballhub.items import ArticleItem
 from urllib import urlencode
+import json
 
 
 class SinaSpider(Spider):
