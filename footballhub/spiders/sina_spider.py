@@ -30,13 +30,17 @@ class SinaSpider(Spider):
                                  body=body, headers=headers)
         pass
 
+
+    def __isDetailUrl(self, title, href):
+        return not title.startswith("图文") and not title.startswith("视频") and (href.startswith("http://sports.sina.com.cn/china") or href.startswith("http://sports.sina.com.cn/g"))
+
     def parse(self, response):
         # follow links to author pages
         for a in response.css(".c_tit a"):
             title = a.xpath("text()").extract_first()
+            href = a.xpath("@href").extract_first()
 
-            if not title.startswith("图文") and not title.startswith("视频"):
-                href = a.xpath("@href").extract_first()
+            if self.__isDetailUrl(title, href):
                 # href = "http://sports.sina.com.cn/g/pl/2017-05-17/doc-ifyfeivp5814230.shtml"
                 yield Request(response.urljoin(href),
                              callback=self.parse_detail)
