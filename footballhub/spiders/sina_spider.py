@@ -13,7 +13,7 @@ import json
 class SinaSpider(Spider):
     name = "sina"
 
-    RENDER_HTML_URL = "http://222.85.139.246:18050/render.html"
+    RENDER_HTML_URL = "http://39.108.147.4:8050/render.html"
 
     def setencoding(self):
         # print "--------ori:"+sys.getdefaultencoding()
