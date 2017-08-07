@@ -10,10 +10,8 @@ from urllib import urlencode
 import json
 
 
-class SinaSpider(Spider):
-    name = "sina"
-
-    RENDER_HTML_URL = "http://39.108.147.4:8050/render.html"
+class DongqiudiSpider(Spider):
+    name = "Dongqiudi"
 
     def setencoding(self):
         # print "--------ori:"+sys.getdefaultencoding()
@@ -23,25 +21,22 @@ class SinaSpider(Spider):
 
     def start_requests(self):
         self.setencoding()
-        url = "http://roll.sports.sina.com.cn/s/channel.php?ch=02#col=65,66&spec=&type=&ch=02&k=&offset_page=0&offset_num=0&num=60&asc=&page=1"
-        body = json.dumps({"url": url, "wait": 5,'images':0,'allowed_content_types':'text/html; charset=utf-8'})
-        headers = Headers({'Content-Type': 'application/json'})
-        yield Request(self.RENDER_HTML_URL, self.parse, method="POST",
-                                 body=body, headers=headers)
-        pass
+        url = "https://www.dongqiudi.com/"
+        headers = Headers({'User-Agent': 'Mozilla/5.0','Content-Type': 'application/json'})
+
+        yield Request(url, self.parse, headers=headers)
 
 
     def __isDetailUrl(self, title, href):
-        return not title.startswith("图文") and not title.startswith("视频") and (href.startswith("http://sports.sina.com.cn/china") or href.startswith("http://sports.sina.com.cn/g"))
+        return not href.startswith("https://www.dongqiudi.com/video")
 
     def parse(self, response):
         # follow links to author pages
-        for a in response.css(".c_tit a"):
-            title = a.xpath("text()").extract_first()
-            href = a.xpath("@href").extract_first()
+        for li in response.xpath('//*[@id="news_list"]/ol//li'):
+            title = li.xpath('h2/a/text()').extract_first()
+            href = li.xpath('a/@href').extract_first()
 
             if self.__isDetailUrl(title, href):
-                # href = "http://sports.sina.com.cn/g/pl/2017-05-17/doc-ifyfeivp5814230.shtml"
                 yield Request(response.urljoin(href),
                              callback=self.parse_detail)
             else:
@@ -73,14 +68,13 @@ class SinaSpider(Spider):
             else:
                 return ""
 
+        title = response.xpath('//*[@id="con"]/div[1]/div[1]/h1/text()').extract_first()
+        posttime = extract_with_css('.time::text')
+        sourceName = extract_with_css('.sourse span::text')
+        sourceUrl = extract_with_css('.sourse a::attr(href)')
+        content = ''.join(response.xpath('//*[@id="con"]/div[1]/div[1]/div[1]').extract())
+        contentText = ''.join(response.xpath('//*[@id="con"]/div[1]/div[1]/div[1]/p/text()').extract()) 
 
-        title = extract_with_css('.article-a__title::text')
-        timestr = extract_with_css(".article-a__time::text")
-        posttime = timestr.replace("年", "-").replace("月", "-").replace("日", " ") + ":00"
-        sourceUrl = extract_with_css(".article-a__source a::attr(href)")
-        sourceName = extract_with_css(".article-a__source a::text")
-        content = ''.join(map(lambda str: str.strip().decode('utf-8'), response.xpath("//div[@id='artibody']/figure|//div[@id='artibody']/p").extract()))
-        contentText = ''.join(map(lambda str: str.strip().decode('utf-8'), response.xpath("//div[@id='artibody']/p/text()").extract()))
 
         item = ArticleItem()
         item['title'] = title
@@ -89,7 +83,7 @@ class SinaSpider(Spider):
         item['sourceName'] = sourceName
         item['content'] = content
         item['contentText'] = contentText
-        item['crawlSite'] = 'sina'
+        item['crawlSite'] = '懂球帝'
         url = response.url
         item['link'] = url
         data = url + ":" + title
@@ -124,7 +118,3 @@ class SinaSpider(Spider):
     def _get_linkmd5id(self, data):
         #url进行md5处理，为避免重复采集设计
         return md5(data).hexdigest()
-
-    #异常处理
-    def _handle_error(self, failue, item, spider):
-        log.err(failure)
