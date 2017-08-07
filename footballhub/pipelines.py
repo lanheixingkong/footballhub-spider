@@ -8,6 +8,9 @@ import json
 import os
 import MySQLdb
 from scrapy.exceptions import DropItem
+import sys
+sys.path.append("/root/python-space/mymodule")
+import fenci
 
 
 class FootballhubPipeline(object):
@@ -62,17 +65,22 @@ class MySQLPipeline(object):
             # SQL 查询语句
             query = "SELECT id FROM article WHERE linkmd5id = '%s'" % (item['linkmd5id'])
 
-            # SQL 插入语句
-            sql = "INSERT INTO article(title, \
-                   posttime, source_url, source_name, content, \
-                   content_text, link, linkmd5id, crawl_site) \
-                   VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )" % \
-                   (item['title'], item['posttime'], item['sourceUrl'], item['sourceName'], \
-                   item['content'], item['contentText'], item['link'], item['linkmd5id'], item['crawlSite'])
             # print sql
             try:
                 cursor.execute(query)
                 if cursor.rowcount == 0:
+                    stopwords = fenci.getStopWords()
+                	arr = fenci.fenci(item['contentText'], stopwords)
+                	#print 'contentWords:%s' % contentWords
+                	contentWords = ' '.join(arr)
+
+                    # SQL 插入语句
+                    sql = "INSERT INTO article(title, \
+                           posttime, source_url, source_name, content, \
+                           content_text, link, linkmd5id, crawl_site, content_words) \
+                           VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )" % \
+                           (item['title'], item['posttime'], item['sourceUrl'], item['sourceName'], \
+                           item['content'], item['contentText'], item['link'], item['linkmd5id'], item['crawlSite'], contentWords)
                     # 执行sql语句
                     cursor.execute(sql)
                     # 提交到数据库执行
